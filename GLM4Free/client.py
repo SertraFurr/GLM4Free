@@ -75,6 +75,8 @@ class ZChat:
         self.model = "glm-4.7"
         self.use_web_search = False
         self.use_thinking = True
+        self.use_image_gen = False
+        self.use_preview_mode = False
         self.user_name = "Guest"
         self.salt_key = None
         self.fe_version = None
@@ -114,6 +116,19 @@ class ZChat:
         except Exception as e:
             print(f"[!] Initialization Error: {e}")
 
+    def _get_context_vars(self):
+        now = datetime.now()
+        return {
+            "{{USER_NAME}}": self.user_name,
+            "{{USER_LOCATION}}": "Unknown",
+            "{{CURRENT_DATETIME}}": now.strftime("%Y-%m-%d %H:%M:%S"),
+            "{{CURRENT_DATE}}": now.strftime("%Y-%m-%d"),
+            "{{CURRENT_TIME}}": now.strftime("%H:%M:%S"),
+            "{{CURRENT_WEEKDAY}}": now.strftime("%A"),
+            "{{CURRENT_TIMEZONE}}": "Europe/Paris",
+            "{{USER_LANGUAGE}}": "en-US"
+        }
+
     def chat(self, prompt):
         self.messages.append({"role": "user", "content": prompt})
 
@@ -138,17 +153,17 @@ class ZChat:
             "params": {},
             "extra": {},
             "features": {
-                "image_generation": False,
+                "image_generation": self.use_image_gen,
                 "web_search": self.use_web_search,
-                "auto_web_search": True,
-                "preview_mode": True,
+                "auto_web_search": self.use_web_search,
+                "preview_mode": self.use_preview_mode,
                 "flags": [],
                 "enable_thinking": self.use_thinking
             },
-            "variables": {
-                "{{USER_NAME}}": self.user_name,
-                "{{USER_LOCATION}}": "Unknown",
-                "{{CURRENT_DATETIME}}": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            "variables": self._get_context_vars(),
+            "background_tasks": {
+                "title_generation": True,
+                "tags_generation": True
             }
         }
 
@@ -198,7 +213,7 @@ def main():
     
     print("\n--- Z.AI Auto-Config Chat Console ---")
     print(f"Current Settings: Model={bot.model}, WebSearch={bot.use_web_search}, Thinking={bot.use_thinking}")
-    print("Commands: /search, /thinking, /new, /history, /exit\n")
+    print("Commands: /search, /thinking, /image, /preview, /new, /history, /exit\n")
     
     while True:
         try:
@@ -224,6 +239,12 @@ def main():
                 elif cmd[0] == "/thinking":
                     bot.use_thinking = not bot.use_thinking
                     print(f"[*] Thinking Mode: {'ON' if bot.use_thinking else 'OFF'}")
+                elif cmd[0] == "/image":
+                    bot.use_image_gen = not bot.use_image_gen
+                    print(f"[*] Image Gen: {'ON' if bot.use_image_gen else 'OFF'}, Does not work, only returning a prompt")
+                elif cmd[0] == "/preview":
+                    bot.use_preview_mode = not bot.use_preview_mode
+                    print(f"[*] Preview Mode: {'ON' if bot.use_preview_mode else 'OFF'}")
                 else:
                     print("[!] Unknown command.")
                 continue
